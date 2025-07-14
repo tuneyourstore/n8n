@@ -4,19 +4,34 @@ ARG LAUNCHER_VERSION=1.1.3
 ARG TARGETPLATFORM
 
 # ==============================================================================
-# STAGE 1: System Dependencies & Base Setup
+# STAGE 1: Builder
+# ==============================================================================
+FROM node:22-alpine AS builder
+
+RUN npm install -g pnpm@10.12.1
+
+WORKDIR /usr/src/app
+
+COPY . .
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm build
+RUN NODE_ENV=production DOCKER_BUILD=true pnpm --filter=n8n --prod --legacy deploy --no-optional ./compiled
+
+# ==============================================================================
+# STAGE 2: System Dependencies & Base Setup
 # ==============================================================================
 FROM n8nio/base:${NODE_VERSION} AS system-deps
 
 # ==============================================================================
-# STAGE 2: Application Artifact Processor
+# STAGE 3: Application Artifact Processor
 # ==============================================================================
 FROM alpine:3.22.0 AS app-artifact-processor
 
-COPY ./compiled /app/
+COPY --from=builder /usr/src/app/packages/cli/compiled /app/
 
 # ==============================================================================
-# STAGE 3: Task Runner Launcher
+# STAGE 4: Task Runner Launcher
 # ==============================================================================
 FROM alpine:3.22.0 AS launcher-downloader
 ARG TARGETPLATFORM
