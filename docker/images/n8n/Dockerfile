@@ -12,7 +12,11 @@ RUN npm install -g pnpm@10.12.1
 
 WORKDIR /usr/src/app
 
-COPY . .
+COPY pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY packages ./packages
+COPY patches ./patches
+COPY scripts ./scripts
+COPY package.json ./
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
